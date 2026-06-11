@@ -1,38 +1,91 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: tfsec
+```yaml
+name: 'Terraform'
 
 on:
   push:
-    branches: [ "Main" ]
+    branches:
+      - Main
   pull_request:
-    branches: [ "Main" ]
-  schedule:
-    - cron: '41 1 * * 1'
+
+permissions:
+  contents: read
 
 jobs:
-  tfsec:
-    name: Run tfsec sarif report
+  terraform:
+    name: 'Terraform CI/CD'
     runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
+    environment: production
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
-      - name: Clone repo
+
+      # Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run tfsec
-        uses: aquasecurity/tfsec-sarif-action@21ded20e8ca120cd9d3d6ab04ef746477542a608
+      # Setup Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
-          sarif_file: tfsec.sarif
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v3
+      # Terraform Format Check
+      - name: Terraform Format
+        run: terraform fmt -check -recursive
+
+      # Setup TFLint
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v6
+
+      # Initialize TFLint Plugins
+      - name: Initialize TFLint
+        run: tflint --init
+
+      # Run TFLint
+      - name: Run TFLint
+        run: tflint --recursive
+
+      # Terraform Init
+      - name: Terraform Init
+        run: terraform init
+
+      # Terraform Validate
+      - name: Terraform Validate
+        run: terraform validate
+
+      # tfsec Scan
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+
+      # Checkov Scan
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
         with:
-          # Path to SARIF file relative to the root of the repository
-          sarif_file: tfsec.sarif
+          directory: .
+
+      # Trivy IaC Scan
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: .
+
+      # SonarQube Scan
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      # Terraform Plan
+      - name: Terraform Plan
+        run: terraform plan -input=false -out=tfplan
+
+      # Terraform Apply
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/Main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false tfplan
+```
