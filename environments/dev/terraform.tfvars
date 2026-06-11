@@ -1,0 +1,9 @@
+resource_group_name    = "dev-terraform-rg"
+location               = "East US"
+vnet_name              = "dev-vnet"
+vnet_address_space     = ["10.1.0.0/16"]
+subnet_name            = "dev-subnet"
+subnet_address_prefixes = ["10.1.1.0/24"]
+vm_name                = "dev-linux-vm"
+admin_username         = "azureuser"
+storage_account_name   = "devstorageacct12345"

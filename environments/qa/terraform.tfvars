@@ -1,0 +1,9 @@
+resource_group_name    = "qa-terraform-rg"
+location               = "East US"
+vnet_name              = "qa-vnet"
+vnet_address_space     = ["10.3.0.0/16"]
+subnet_name            = "qa-subnet"
+subnet_address_prefixes = ["10.3.1.0/24"]
+vm_name                = "qa-linux-vm"
+admin_username         = "azureuser"
+storage_account_name   = "qastorageacct12345"

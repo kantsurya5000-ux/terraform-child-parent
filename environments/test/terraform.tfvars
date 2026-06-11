@@ -1,0 +1,9 @@
+resource_group_name    = "test-terraform-rg"
+location               = "East US"
+vnet_name              = "test-vnet"
+vnet_address_space     = ["10.2.0.0/16"]
+subnet_name            = "test-subnet"
+subnet_address_prefixes = ["10.2.1.0/24"]
+vm_name                = "test-linux-vm"
+admin_username         = "azureuser"
+storage_account_name   = "teststorageacct12345"
