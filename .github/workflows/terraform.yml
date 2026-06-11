@@ -1,56 +1,91 @@
-# Terraform Format
-- name: Terraform Format
-  run: terraform fmt -check -recursive
+```yaml
+name: 'Terraform'
 
-# Setup TFLint
-- name: Setup TFLint
-  uses: terraform-linters/setup-tflint@v6
+on:
+  push:
+    branches:
+      - Main
+  pull_request:
 
-# Initialize TFLint
-- name: Initialize TFLint
-  run: tflint --init
+permissions:
+  contents: read
 
-# Run TFLint
-- name: Run TFLint
-  run: tflint --recursive
+jobs:
+  terraform:
+    name: 'Terraform CI/CD'
+    runs-on: ubuntu-latest
+    environment: production
 
-# Terraform Init
-- name: Terraform Init
-  run: terraform init
+    defaults:
+      run:
+        shell: bash
 
-# Terraform Validate
-- name: Terraform Validate
-  run: terraform validate
+    steps:
 
-# tfsec Scan
-- name: Run tfsec
-  uses: aquasecurity/tfsec-action@v1
+      # Checkout Repository
+      - name: Checkout
+        uses: actions/checkout@v4
 
-# Checkov Scan
-- name: Run Checkov
-  uses: bridgecrewio/checkov-action@master
-  with:
-    directory: .
+      # Setup Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-# Trivy IaC Scan
-- name: Run Trivy
-  uses: aquasecurity/trivy-action@master
-  with:
-    scan-type: config
-    scan-ref: .
+      # Terraform Format Check
+      - name: Terraform Format
+        run: terraform fmt -check -recursive
 
-# SonarQube Scan
-- name: SonarQube Scan
-  uses: SonarSource/sonarqube-scan-action@v5
-  env:
-    SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      # Setup TFLint
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v6
 
-# Terraform Plan
-- name: Terraform Plan
-  run: terraform plan -input=false
+      # Initialize TFLint Plugins
+      - name: Initialize TFLint
+        run: tflint --init
 
-# Terraform Apply
-- name: Terraform Apply
-  if: github.ref == 'refs/heads/Main' && github.event_name == 'push'
-  run: terraform apply -auto-approve -input=false
+      # Run TFLint
+      - name: Run TFLint
+        run: tflint --recursive
+
+      # Terraform Init
+      - name: Terraform Init
+        run: terraform init
+
+      # Terraform Validate
+      - name: Terraform Validate
+        run: terraform validate
+
+      # tfsec Scan
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+
+      # Checkov Scan
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+
+      # Trivy IaC Scan
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: .
+
+      # SonarQube Scan
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      # Terraform Plan
+      - name: Terraform Plan
+        run: terraform plan -input=false -out=tfplan
+
+      # Terraform Apply
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/Main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false tfplan
+```
