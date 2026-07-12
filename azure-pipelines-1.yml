@@ -1,0 +1,63 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- Main
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: 
+    jobs:
+      - job: 
+        steps:
+          - 
+- task: SonarQubePrepare@3
+  inputs:
+    SonarQube: 'sonarcloud-connection'
+    scannerMode: 'cli'
+    configMode: 'file'
+- task: dependency-check-build-task@6
+  inputs:
+    projectName: 'LandingZone'
+    scanPath: '.'
+    excludePath: '**/.terraform/**'
+    format: 'HTML'
+    uploadReports: true
+    uploadSARIFReport: true
+    failOnCVSS: '7'
+- task: SonarQubeAnalyze@8
+  inputs:
+    jdkversion: 'JAVA_HOME_17_X64'
+- task: SonarQubePublish@8
+  inputs:
+    pollingTimeoutSec: '300'
+- task: TerraformTask@1
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    backendServiceArm: 'Azure subscription 1(0da381e6-3a0a-4104-9f99-20a6db06a77f)'
+    backendAzureRmResourceGroupName: 'pipeline-storage'
+    backendAzureRmStorageAccountName: 'pipelinest'
+    backendAzureRmContainerName: 'pipelinecontainer'
+    backendAzureRmKey: 'pipeline.tfstate'
+- task: TerraformTask@2
+  inputs:
+    provider: 'azurerm'
+    command: 'validate'
+- task: TerraformTask@5
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    environmentServiceNameAzureRM: 'Azure subscription 1(0da381e6-3a0a-4104-9f99-20a6db06a77f)'
+    - task: tfsec@1
+      inputs:
+        version: 'v1.26.0'
+- task: TerraformTask@5
+  inputs:
+    provider: 'azurerm'
+    command: 'apply'
+    environmentServiceNameAzureRM: 'Azure subscription 1(0da381e6-3a0a-4104-9f99-20a6db06a77f)'
